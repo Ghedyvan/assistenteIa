@@ -1,10 +1,9 @@
 const fs = require("fs");
 const axios = require("axios");
 const client = require("./client");
-require('dotenv').config();
 
 const DEEPSEEK_API_KEY = process.env.API_KEY; // Substitua por sua chave real
-const PIX_KEY = "pix@teste.com";
+const PIX_KEY = "c366c9e3-fb7c-431f-957e-97287f4f964f"; // Chave PIX
 const PAUSE_DURATION = 6 * 60 * 60 * 1000; // 6 horas em milissegundos
 const ADMIN_NUMBER = "558282371442"; // Número do administrador
 
@@ -152,6 +151,7 @@ const systemPrompt = `Você é um assistente virtual sem nome. Suas característ
 38. Não avise que um atendente humano vai liberar o teste após configurar o app
 39. Para deixar texto em negrito use apenas um asterisco antes e outro depois do texto invés de usar 2 antes e 2 depois
 40. Se o cliente enviar mais de uma mensagem em um tervalo menor que 2 segundos você deve responder apenas a primeira delas
+42. Você deve informar que a chave pix é do tipo aleatória e deve enviar ela na mensagem seguinte, sem mais nada
 
 Sempre que relevante:
 - Ofereça ajuda específica
@@ -214,7 +214,9 @@ async function isContactSaved(chatId) {
       return isSaved;
     }
 
-    console.log(`[VERIFICAÇÃO] O contato ${chatId} não foi encontrado na lista de contatos.`);
+    console.log(
+      `[VERIFICAÇÃO] O contato ${chatId} não foi encontrado na lista de contatos.`
+    );
     return false; // Retorna false se o contato não foi encontrado
   } catch (error) {
     console.error("Erro ao verificar se o contato está salvo:", error);
@@ -233,7 +235,9 @@ async function processMessage(chatId, message) {
 
   // Evita concorrência: verifica se já está processando uma mensagem para este chatId
   if (processingMessages.has(chatId)) {
-    console.log(`[IGNORADO] Mensagem de ${chatId} ignorada porque já está sendo processada.`);
+    console.log(
+      `[IGNORADO] Mensagem de ${chatId} ignorada porque já está sendo processada.`
+    );
     return null;
   }
 
@@ -241,11 +245,36 @@ async function processMessage(chatId, message) {
   processingMessages.add(chatId);
 
   try {
+    // Verifica se o chat está pausado
+    if (isChatPaused(chatId)) {
+      console.log(
+        `[IGNORADO] Chat ${chatId} está pausado. Mensagem não processada.`
+      );
+      return null; // Ignora a mensagem
+    }
+
+    // Verifica se a mensagem é uma foto
+    if (message.type === "image") {
+      console.log(
+        `[TRANSFERÊNCIA] O cliente ${chatId} enviou uma foto. Transferindo para humano.`
+      );
+      await sendMessage(
+        chatId,
+        "Um atendente humano irá entrar em contato em breve. Por favor, aguarde. ⏳"
+      );
+      activatePause(chatId); // Ativa a pausa para o cliente imediatamente
+      await notifyAdmin(chatId); // Notifica o administrador
+      return null;
+    }
+
     // Verifica se a mensagem foi enviada em menos de 2 segundos desde a última
     if (lastMessageTimestamps.has(chatId)) {
       const lastTimestamp = lastMessageTimestamps.get(chatId);
-      if (now - lastTimestamp < 2000) { // 2000 ms = 2 segundos
-        console.log(`[IGNORADO] Mensagem de ${chatId} ignorada por estar dentro do intervalo de 2 segundos.`);
+      if (now - lastTimestamp < 2000) {
+        // 2000 ms = 2 segundos
+        console.log(
+          `[IGNORADO] Mensagem de ${chatId} ignorada por estar dentro do intervalo de 2 segundos.`
+        );
         return null; // Ignora a mensagem
       }
     }
@@ -256,13 +285,17 @@ async function processMessage(chatId, message) {
     // Verifica se o número está salvo nos contatos
     const isSavedContact = await isContactSaved(chatId);
     if (isSavedContact) {
-      console.log(`[IGNORADO] Chat ${chatId} está salvo nos contatos. Mensagem ignorada.`);
+      console.log(
+        `[IGNORADO] Chat ${chatId} está salvo nos contatos. Mensagem ignorada.`
+      );
       return null; // Ignora a mensagem
     }
 
     // Verifica se o chat está pausado
     if (isChatPaused(chatId)) {
-      console.log(`[IGNORADO] Chat ${chatId} está pausado. Mensagem não processada.`);
+      console.log(
+        `[IGNORADO] Chat ${chatId} está pausado. Mensagem não processada.`
+      );
       return null; // Ignora a mensagem
     }
 
@@ -273,7 +306,9 @@ async function processMessage(chatId, message) {
         "Um atendente humano irá entrar em contato em breve. Por favor, aguarde. ⏳"
       );
       activatePause(chatId); // Ativa a pausa para o cliente imediatamente
-      console.log(`[PAUSA ATIVADA] Chat ${chatId} pausado após solicitação de humano.`);
+      console.log(
+        `[PAUSA ATIVADA] Chat ${chatId} pausado após solicitação de humano.`
+      );
       await notifyAdmin(chatId); // Notifica o administrador
       return null;
     }
@@ -308,7 +343,9 @@ async function processMessage(chatId, message) {
           "Um atendente humano irá entrar em contato em breve. Por favor, aguarde. ⏳"
         );
         activatePause(chatId); // Ativa a pausa apenas se o chat não estiver pausado
-        console.log(`[PAUSA ATIVADA] Chat ${chatId} pausado após resposta da FAQ.`);
+        console.log(
+          `[PAUSA ATIVADA] Chat ${chatId} pausado após resposta da FAQ.`
+        );
         await notifyAdmin(chatId); // Notifica o administrador
       }
 
@@ -326,7 +363,9 @@ async function processMessage(chatId, message) {
         "Um atendente humano irá entrar em contato em breve. Por favor, aguarde. ⏳"
       );
       activatePause(chatId); // Ativa a pausa apenas se o chat não estiver pausado
-      console.log(`[PAUSA ATIVADA] Chat ${chatId} pausado após resposta da IA.`);
+      console.log(
+        `[PAUSA ATIVADA] Chat ${chatId} pausado após resposta da IA.`
+      );
       await notifyAdmin(chatId); // Notifica o administrador
       return;
     }
