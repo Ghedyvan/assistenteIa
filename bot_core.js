@@ -232,6 +232,19 @@ const pausedChats = new Map(); // { chatId: timestamp }
 const lastMessageTimestamps = new Map(); // { chatId: timestamp da última mensagem }
 const processingMessages = new Set(); // Para evitar concorrência
 
+async function sendPixKey(chatId) {
+  const pixMessage = "Segue a chave PIX para pagamento:";
+  const pixKey = PIX_KEY; // Chave PIX definida no código
+
+  // Envia a mensagem principal
+  await sendMessage(chatId, pixMessage);
+
+  // Envia a chave PIX em uma mensagem separada
+  await sendMessage(chatId, pixKey);
+
+  console.log(`[PIX ENVIADO] Chave PIX enviada para o chat ${chatId}`);
+}
+
 async function processMessage(chatId, message) {
   const now = Date.now();
 
@@ -356,21 +369,27 @@ async function processMessage(chatId, message) {
 
     // Obtém resposta da IA
     const aiResponse = await getDeepSeekResponse(context.messages);
-    context.messages.push({ role: "assistant", content: aiResponse });
+context.messages.push({ role: "assistant", content: aiResponse });
 
-    // Verifica se a resposta indica redirecionamento para humano
-    if (isHumanRedirect(aiResponse)) {
-      await sendMessage(
-        chatId,
-        "Um atendente humano irá entrar em contato em breve. Por favor, aguarde. ⏳"
-      );
-      activatePause(chatId); // Ativa a pausa apenas se o chat não estiver pausado
-      console.log(
-        `[PAUSA ATIVADA] Chat ${chatId} pausado após resposta da IA.`
-      );
-      await notifyAdmin(chatId); // Notifica o administrador
-      return;
-    }
+// Verifica se a resposta indica que o cliente quer pagar via PIX
+if (aiResponse.toLowerCase().includes("pagar via pix")) {
+  await sendPixKey(chatId); // Envia a chave PIX em mensagens separadas
+  return;
+}
+
+// Verifica se a resposta indica redirecionamento para humano
+if (isHumanRedirect(aiResponse)) {
+  await sendMessage(
+    chatId,
+    "Um atendente humano irá entrar em contato em breve. Por favor, aguarde. ⏳"
+  );
+  activatePause(chatId); // Ativa a pausa apenas se o chat não estiver pausado
+  console.log(
+    `[PAUSA ATIVADA] Chat ${chatId} pausado após resposta da IA.`
+  );
+  await notifyAdmin(chatId); // Notifica o administrador
+  return;
+}
 
     // Limita o histórico
     if (context.messages.length > 10) {
