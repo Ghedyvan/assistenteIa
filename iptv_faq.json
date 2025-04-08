@@ -1,0 +1,26 @@
+{
+    "faq": [
+      {
+        "pergunta": "Como assinar o serviço?",
+        "resposta": "Você pode assinar enviando 'Assinar' aqui no WhatsApp para receber o passo a passo."
+      },
+      {
+        "pergunta": "Quais métodos de pagamento vocês aceitam?",
+        "resposta": "Aceitamos PIX e cartão de crédito. Você pode escolher a opção que preferir durante o processo de assinatura."
+      },
+      {
+        "pergunta": "Como resolver problemas de buffering?",
+        "resposta": "1️⃣ Verifique sua conexão de internet (recomendamos no mínimo 15 Mbps).\n2️⃣ Reinicie o roteador.\n3️⃣ Feche outros aplicativos que usam banda larga.\nSe o problema persistir, me avise!"
+      },
+      {
+        "pergunta": "Vocês têm o canal ESPN 4K?",
+        "resposta": "Sim! O canal ESPN 4K está disponível"
+      }
+    ],
+    "planos": {
+      "1_mes": "R$ 20 (R$ 25 primeira mensalidade)",
+      "3_meses": "R$ 55 (economize R$ 20)",
+      "6_meses": "R$ 100 (apenas R$ 16,66/mês)",
+      "1_ano": "R$ 180 (melhor custo-benefício: R$ 15/mês)"
+    }
+  }
