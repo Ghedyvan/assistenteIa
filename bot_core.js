@@ -1,8 +1,9 @@
 const fs = require("fs");
 const axios = require("axios");
 const client = require("./client");
+require('dotenv').config();
 
-const DEEPSEEK_API_KEY = "sk-90b7e3922d5d4947b9f643371ad105f1"; // Substitua por sua chave real
+const DEEPSEEK_API_KEY = process.env.API_KEY; // Substitua por sua chave real
 const PIX_KEY = "pix@teste.com";
 const PAUSE_DURATION = 6 * 60 * 60 * 1000; // 6 horas em milissegundos
 const ADMIN_NUMBER = "558282371442"; // Número do administrador
