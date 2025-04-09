@@ -279,6 +279,16 @@ async function processMessage(chatId, message) {
       return null; // Ignora a mensagem
     }
 
+    // Verifica se a mensagem é um áudio
+    if (message.type === "audio") {
+      console.log(`[ÁUDIO RECEBIDO] O cliente ${chatId} enviou um áudio.`);
+      await sendMessage(
+        chatId,
+        "Desculpe, não consigo ouvir áudios. Por favor, digite sua mensagem para que eu possa ajudar. 😊"
+      );
+      return null; // Não processa mais nada para mensagens de áudio
+    }
+
     // Verifica se a mensagem é uma foto
     if (message.type === "image") {
       console.log(
@@ -380,27 +390,27 @@ async function processMessage(chatId, message) {
 
     // Obtém resposta da IA
     const aiResponse = await getDeepSeekResponse(context.messages);
-context.messages.push({ role: "assistant", content: aiResponse });
+    context.messages.push({ role: "assistant", content: aiResponse });
 
-// Verifica se a resposta indica que o cliente quer pagar via PIX
-if (aiResponse.toLowerCase().includes("pagar via pix")) {
-  await sendPixKey(chatId); // Envia a chave PIX em mensagens separadas
-  return;
-}
+    // Verifica se a resposta indica que o cliente quer pagar via PIX
+    if (aiResponse.toLowerCase().includes("pagar via pix")) {
+      await sendPixKey(chatId); // Envia a chave PIX em mensagens separadas
+      return;
+    }
 
-// Verifica se a resposta indica redirecionamento para humano
-if (isHumanRedirect(aiResponse)) {
-  await sendMessage(
-    chatId,
-    "Um atendente humano irá entrar em contato em breve. Por favor, aguarde. ⏳"
-  );
-  activatePause(chatId); // Ativa a pausa apenas se o chat não estiver pausado
-  console.log(
-    `[PAUSA ATIVADA] Chat ${chatId} pausado após resposta da IA.`
-  );
-  await notifyAdmin(chatId); // Notifica o administrador
-  return;
-}
+    // Verifica se a resposta indica redirecionamento para humano
+    if (isHumanRedirect(aiResponse)) {
+      await sendMessage(
+        chatId,
+        "Um atendente humano irá entrar em contato em breve. Por favor, aguarde. ⏳"
+      );
+      activatePause(chatId); // Ativa a pausa apenas se o chat não estiver pausado
+      console.log(
+        `[PAUSA ATIVADA] Chat ${chatId} pausado após resposta da IA.`
+      );
+      await notifyAdmin(chatId); // Notifica o administrador
+      return;
+    }
 
     // Limita o histórico
     if (context.messages.length > 10) {
